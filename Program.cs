@@ -16,15 +16,18 @@ namespace Airgeadlamh.YoutubeUploader
     internal class UploadVideo
     {
         public static String video_title = "";
+        public static string streamer_name = "";
         public static String stream_source = "";
         public static String video_path = "";
+        
         public static bool clip_exists = false;
         [STAThread]
         static void Main(string[] args)
         {
             video_title = args[0];
-            stream_source = args[1];
-            video_path = args[2];
+            streamer_name = args[1];
+            stream_source = args[2];
+            video_path = args[3];
             Console.WriteLine("Checking if clip exists");
             Console.WriteLine("============================");
             try
