@@ -41,6 +41,7 @@ Sekai ga Owaru Made wa - WANDS;34:30;39:30";
 
         public static void create_basedir() {
             Directory.CreateDirectory("streams");
+            Directory.CreateDirectory("stream_files");
             using (StreamWriter outputFile = new StreamWriter("streams/stream_example.txt"))
             {
                 String[] lines = example_stream.Split("\n");

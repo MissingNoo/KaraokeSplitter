@@ -23,7 +23,7 @@ namespace Airgeadlamh.YoutubeUploader
             string[] stream_list = Directory.GetFiles("streams");
             for (var i = 0; i < stream_list.Count(); i++)
             {
-                Console.WriteLine($"{i}: {Path.GetFileName(stream_list[i])} ");
+                Console.WriteLine($"{i}: {Path.GetFileName(stream_list[i])}");
             }
             #endregion
             
@@ -43,7 +43,7 @@ namespace Airgeadlamh.YoutubeUploader
                 Console.WriteLine("You need the client_secrets.json from the Youtube API to do uploads!");
                 upload_to_youtube = "no";
             }
-            stream_file = stream_info[5].Split(";")[1];;
+            stream_file = Path.Join("stream_files", stream_info[5].Split(";")[1]);
             make_mp3 = stream_info[6].Split(";")[1];;
             
             string out_dir = Path.Join("output", stream_name);
@@ -52,7 +52,7 @@ namespace Airgeadlamh.YoutubeUploader
             
             #endregion
 
-            Console.WriteLine($"\n====================================\nStream name: {stream_name} \nStream Link: {stream_link} \nStreamer: {streamer_name} \nStream file: {stream_file} \nMaking mp3: {make_mp3} \nUploading to youtube: {upload_to_youtube} \n====================================\n");
+            Console.WriteLine($"\n====================================\nStream name: {stream_name} \nStream Link: {stream_link} \nStreamer: {streamer_name} \nStream file: {Path.GetFileName(stream_file)} \nMaking mp3: {make_mp3} \nUploading to youtube: {upload_to_youtube} \n====================================\n");
             
             #region Processing
             string[] song_data = File.ReadAllText(stream_list[selected]).Split("#Stream_Info#")[1].Split("\n");
