@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.68.0.3570" />
+    <PackageReference Include="taglibsharp" Version="2.3.0" />
   </ItemGroup>
 
 </Project>

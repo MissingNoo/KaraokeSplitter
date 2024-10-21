@@ -41,7 +41,6 @@ namespace Airgeadlamh.YoutubeUploader
             //    Console.WriteLine("Clip already uploaded to channel, exiting");
             //    return;
             //}
-
             Console.WriteLine($"Uploading {video_title} to youtube");
             Console.WriteLine("==============================");
             try

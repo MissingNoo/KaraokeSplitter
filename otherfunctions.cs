@@ -7,6 +7,7 @@ streamer_name;Lumin Tsukiboshi
 mp3_image;lumin.png
 upload_to_youtube;yes
 stream_file;stream.mkv
+make_mp3;yes
 #Stream_Info#
 Yuzurenai Negai - Magic Knight Rayearth;9:55;13:58
 Diamonds - Princess Princess;14:13;18:20
@@ -16,7 +17,7 @@ Unravel - Tokyo Ghoul;27:16;31:04
 Funny Bunny - The Pillows;31:06;34:24
 Sekai ga Owaru Made wa - WANDS;34:30;39:30";
         public static void shell_run(String command, bool verbose) {
-            Console.WriteLine(command);
+            //Console.WriteLine(command);
             //string result = "";
             using (System.Diagnostics.Process proc = new System.Diagnostics.Process())
             {
