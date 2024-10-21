@@ -1,192 +1,83 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Upload;
-using Google.Apis.Util.Store;
-using Google.Apis.YouTube.v3;
-using Google.Apis.YouTube.v3.Data;
-
-namespace Airgeadlamh.YoutubeUploader
+﻿namespace Airgeadlamh.YoutubeUploader
 {
-    internal class UploadVideo
-    {
-        public static String video_title = "";
+    internal class Program {
+        public static string stream_name = "";
         public static string streamer_name = "";
-        public static String stream_source = "";
-        public static String video_path = "";
-        
-        public static bool clip_exists = false;
-        [STAThread]
+        public static string stream_link = "";
+        public static string mp3_image = "";
+        public static string upload_to_youtube = "";
+        public static string stream_file = "";
+        public static string mp4_path = "";
+        public static bool verbose = false;
         static void Main(string[] args)
         {
-            video_title = args[0];
-            streamer_name = args[1];
-            stream_source = args[2];
-            video_path = args[3];
-            Console.WriteLine("Checking if clip exists");
-            Console.WriteLine("============================");
-            try
+            #region Selecting stream
+            Functions.create_basedir();
+            string[] stream_list = Directory.GetFiles("streams");
+            for (var i = 0; i < stream_list.Count(); i++)
             {
-                new MyUploads().Run().Wait();
+                Console.WriteLine($"{i}: {Path.GetFileName(stream_list[i])} ");
             }
-            catch (AggregateException ex)
+            #endregion
+            
+            #region Grabbing stream data from file
+            Console.WriteLine();
+            Console.Write("Select the stream file: ");
+            #pragma warning disable CS8604 // Possible null reference argument.
+            int selected = int.Parse(Console.ReadLine());
+            string[] stream_info = File.ReadAllText(stream_list[selected]).Split("#Stream_Info#")[0].Split("\n");
+            stream_name = stream_info[0].Split(";")[1];
+            stream_link = stream_info[1].Split(";")[1];
+            streamer_name = stream_info[2].Split(";")[1];
+            mp3_image = stream_info[3].Split(";")[1];
+            upload_to_youtube = stream_info[4].Split(";")[1];
+            stream_file = stream_info[5].Split(";")[1];;
+            
+            string out_dir = Path.Join("output", stream_name);
+            Directory.CreateDirectory(out_dir);
+            Directory.CreateDirectory(Path.Join(out_dir, "mp4"));
+            #endregion
+
+            Console.WriteLine($"\n====================================\nStream name: {stream_name} \nStream Link: {stream_link} \nStreamer: {streamer_name} \nStream file: {stream_file} \nUploading to youtube: {upload_to_youtube} \n====================================\n");
+            
+            #region Processing
+            string[] song_data = File.ReadAllText(stream_list[selected]).Split("#Stream_Info#")[1].Split("\n");
+            foreach (var item in song_data)
             {
-                foreach (var e in ex.InnerExceptions)
+                if (item.Contains(';'))
                 {
-                Console.WriteLine("Error: " + e.Message);
-                }
-            }
-
-            if (clip_exists)
-            {
-                Console.WriteLine("Clip already uploaded to channel, exiting");
-                return;
-            }
-
-            Console.WriteLine("Uploading clip to youtube");
-            Console.WriteLine("==============================");
-            try
-            {
-                new UploadVideo().Run().Wait();
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var e in ex.InnerExceptions)
-                {
-                Console.WriteLine("Error: " + e.Message);
-                }
-            }
-        }
-
-        public async Task Run()
-        {
-        UserCredential credential;
-        using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
-        {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.Load(stream).Secrets,
-                // This OAuth 2.0 access scope allows an application to upload files to the
-                // authenticated user's YouTube channel, but doesn't allow other types of access.
-                new[] { YouTubeService.Scope.YoutubeUpload },
-                "user",
-                CancellationToken.None
-            );
-        }
-
-        var youtubeService = new YouTubeService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
-        });
-
-        var video = new Video();
-        video.Snippet = new VideoSnippet();
-        video.Snippet.Title = video_title;
-        video.Snippet.Description = "Source: " + stream_source + "\nYoutube: @LuminTsukiboshi\nTwitter: https://x.com/LuminTsukiboshi";
-        video.Snippet.Tags = new string[] { streamer_name, "karaoke" };
-        video.Snippet.CategoryId = "10"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
-        video.Status = new VideoStatus();
-        video.Status.PrivacyStatus = "unlisted"; // or "private" or "public"
-        var filePath = video_path;
-
-        using (var fileStream = new FileStream(filePath, FileMode.Open))
-        {
-            var videosInsertRequest = youtubeService.Videos.Insert(video, "snippet,status", fileStream, "video/*");
-            videosInsertRequest.ProgressChanged += videosInsertRequest_ProgressChanged;
-            videosInsertRequest.ResponseReceived += videosInsertRequest_ResponseReceived;
-
-            await videosInsertRequest.UploadAsync();
-        }
-        }
-
-        void videosInsertRequest_ProgressChanged(Google.Apis.Upload.IUploadProgress progress)
-        {
-        switch (progress.Status)
-        {
-            case UploadStatus.Uploading:
-            Console.WriteLine("{0} bytes sent.", progress.BytesSent);
-            break;
-
-            case UploadStatus.Failed:
-            Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
-            break;
-        }
-        }
-
-        void videosInsertRequest_ResponseReceived(Video video)
-        {
-        Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
-        }
-    }
-
-    internal class MyUploads
-    {
-        public async Task Run()
-        {
-            UserCredential credential;
-            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
-                {
-                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    // This OAuth 2.0 access scope allows for read-only access to the authenticated 
-                    // user's account, but not other types of account access.
-                    new[] { YouTubeService.Scope.YoutubeReadonly },
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(this.GetType().ToString())
-                );
-            }
-
-            var youtubeService = new YouTubeService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = this.GetType().ToString()
-            });
-
-            var channelsListRequest = youtubeService.Channels.List("contentDetails");
-            channelsListRequest.Mine = true;
-
-            // Retrieve the contentDetails part of the channel resource for the authenticated user's channel.
-            var channelsListResponse = await channelsListRequest.ExecuteAsync();
-
-            foreach (var channel in channelsListResponse.Items)
-            {
-                // From the API response, extract the playlist ID that identifies the list
-                // of videos uploaded to the authenticated user's channel.
-                var uploadsListId = channel.ContentDetails.RelatedPlaylists.Uploads;
-
-                //Console.WriteLine("Videos in list {0}", uploadsListId);
-
-                var nextPageToken = "";
-                while (nextPageToken != null)
-                {
-                var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet");
-                playlistItemsListRequest.PlaylistId = uploadsListId;
-                playlistItemsListRequest.MaxResults = 50;
-                playlistItemsListRequest.PageToken = nextPageToken;
-
-                // Retrieve the list of videos uploaded to the authenticated user's channel.
-                var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
-
-                foreach (var playlistItem in playlistItemsListResponse.Items)
-                {
-                    // Print information about each video.
-                    //Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
-                    if (playlistItem.Snippet.Title == UploadVideo.video_title)
+                    string[] song = item.Split(";");
+                    mp4_path = Path.Join(out_dir, "mp4", song[0]) + ".mp4";
+                    if (!File.Exists(mp4_path))
                     {
-                        UploadVideo.clip_exists = true;
-                        return;
+                        Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song[1]}\" -to \"{song[2]}\" -i \'{stream_file}\' -c copy \'{mp4_path}\'", verbose);
+                    }
+                    string[] uploaded_list = File.ReadAllText("upload_list.txt").Split("\n");
+                    bool already_uploaded = false;
+                    foreach (var upload in uploaded_list)
+                    {
+                        if (upload == $"[{streamer_name}] {song[0]}")
+                        {
+                            already_uploaded = true;
+                        }
+                    }
+                    if (upload_to_youtube == "yes")
+                    {
+                        if (!already_uploaded)
+                        {
+                            UploadVideo.video_title = $"[{streamer_name}] {song[0]}";
+                            UploadVideo.upload();
+                            File.AppendAllText("upload_list.txt", UploadVideo.video_title);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[{streamer_name}] {song[0]} Already uploaded!");
+                        }
+                        
                     }
                 }
-
-                nextPageToken = playlistItemsListResponse.NextPageToken;
-                }
             }
+            #endregion
         }
     }
 }

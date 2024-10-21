@@ -1,5 +1,11 @@
-.vscode/launch.json
-.vscode/tasks.json
 client-secrets.json
 obj/
 bin/
+streams/
+.vscode/
+stream.mkv
+output/
+client_secrets.json
+ERBUnarchived.ts
+Untitled-1
+upload_list.txt
