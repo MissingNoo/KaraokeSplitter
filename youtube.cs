@@ -106,13 +106,15 @@ namespace Airgeadlamh.YoutubeUploader
 
             case UploadStatus.Failed:
             Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
+            Program.upload_to_youtube = "no";
             break;
         }
         }
 
         void videosInsertRequest_ResponseReceived(Video video)
         {
-        Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
+            Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
+            File.AppendAllText("upload_list.txt", video_title);
         }
     }
 

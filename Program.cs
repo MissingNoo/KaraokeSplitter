@@ -120,11 +120,10 @@ namespace Airgeadlamh.YoutubeUploader
                         {
                             UploadVideo.video_title = title;
                             UploadVideo.upload();
-                            File.AppendAllText("upload_list.txt", title);
                         }
                         else
                         {
-                            Console.WriteLine($"\"[{streamer_name}] {song[0]}\" Already uploaded to Youtube!");
+                            Console.WriteLine($"\"[{streamer_name}] {song[0]}\" Already uploaded to Youtube!" + Environment.NewLine);
                         }
                         
                     }
