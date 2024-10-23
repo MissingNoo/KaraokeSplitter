@@ -114,7 +114,7 @@ namespace Airgeadlamh.YoutubeUploader
         void videosInsertRequest_ResponseReceived(Video video)
         {
             Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
-            File.AppendAllText("upload_list.txt", video_title);
+            File.AppendAllText("upload_list.txt", video_title + Environment.NewLine);
         }
     }
 

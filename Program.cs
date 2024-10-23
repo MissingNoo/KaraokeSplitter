@@ -69,6 +69,7 @@ namespace Airgeadlamh.YoutubeUploader
                     string[] song = item.Split(";");
                     mp4_path = Path.Join(out_dir, "mp4", song[0]) + ".mp4";
                     mp3_path = Path.Join("output", "mp3", streamer_name, song[0]) + ".mp3";
+                    Console.WriteLine();
                     if (!File.Exists(mp4_path))
                     {
                         Console.WriteLine($"Cutting \"{song[0]}\" from stream, {song[1]} to {song[2]}... ");
@@ -123,7 +124,7 @@ namespace Airgeadlamh.YoutubeUploader
                         }
                         else
                         {
-                            Console.WriteLine($"\"[{streamer_name}] {song[0]}\" Already uploaded to Youtube!" + Environment.NewLine);
+                            Console.WriteLine($"\"[{streamer_name}] {song[0]}\" Already uploaded to Youtube!\n");
                         }
                         
                     }
