@@ -15,6 +15,7 @@ namespace Airgeadlamh.YoutubeUploader
 {
     internal class UploadVideo
     {
+        private static string failed_videos = "";
         public static String video_title = "";
         public static string streamer_name = "";
         public static bool clip_exists = false;
@@ -46,69 +47,71 @@ namespace Airgeadlamh.YoutubeUploader
             try
             {
                 new UploadVideo().Run().Wait();
+                Console.WriteLine($"######Failed Songs######{failed_videos}\n#######################");
             }
             catch (AggregateException ex)
             {
                 foreach (var e in ex.InnerExceptions)
                 {
-                Console.WriteLine("Error: " + e.Message);
+                //Console.WriteLine("Error: " + e.Message);
                 }
             }
         }
         public async Task Run()
         {
-        UserCredential credential;
-        using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
-        {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.FromStream(stream).Secrets,
-                // This OAuth 2.0 access scope allows an application to upload files to the
-                // authenticated user's YouTube channel, but doesn't allow other types of access.
-                new[] { YouTubeService.Scope.YoutubeUpload },
-                "user",
-                CancellationToken.None
-            );
-        }
+            UserCredential credential;
+            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
+            {
+                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.FromStream(stream).Secrets,
+                    // This OAuth 2.0 access scope allows an application to upload files to the
+                    // authenticated user's YouTube channel, but doesn't allow other types of access.
+                    new[] { YouTubeService.Scope.YoutubeUpload },
+                    "user",
+                    CancellationToken.None
+                );
+            }
 
-        var youtubeService = new YouTubeService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
-        });
+            var youtubeService = new YouTubeService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
+            });
 
-        var video = new Video();
-        video.Snippet = new VideoSnippet();
-        video.Snippet.Title = video_title;
-        video.Snippet.Description = $"Source: {Program.stream_link} \nYoutube: {Program.streamer_name}";
-        video.Snippet.Tags = new string[] { Program.streamer_name, "karaoke" };
-        video.Snippet.CategoryId = "10"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
-        video.Status = new VideoStatus();
-        video.Status.PrivacyStatus = "unlisted"; // or "private" or "public"
-        var filePath = Program.mp4_path;
+            var video = new Video();
+            video.Snippet = new VideoSnippet();
+            video.Snippet.Title = video_title;
+            video.Snippet.Description = $"Source: {Program.stream_link} \nYoutube: {Program.streamer_name}";
+            video.Snippet.Tags = new string[] { Program.streamer_name, "karaoke" };
+            video.Snippet.CategoryId = "10"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
+            video.Status = new VideoStatus();
+            video.Status.PrivacyStatus = "unlisted"; // or "private" or "public"
+            var filePath = Program.mp4_path;
 
-        using (var fileStream = new FileStream(filePath, FileMode.Open))
-        {
-            var videosInsertRequest = youtubeService.Videos.Insert(video, "snippet,status", fileStream, "video/*");
-            videosInsertRequest.ProgressChanged += videosInsertRequest_ProgressChanged;
-            videosInsertRequest.ResponseReceived += videosInsertRequest_ResponseReceived;
+            using (var fileStream = new FileStream(filePath, FileMode.Open))
+            {
+                var videosInsertRequest = youtubeService.Videos.Insert(video, "snippet,status", fileStream, "video/*");
+                videosInsertRequest.ProgressChanged += videosInsertRequest_ProgressChanged;
+                videosInsertRequest.ResponseReceived += videosInsertRequest_ResponseReceived;
 
-            await videosInsertRequest.UploadAsync();
-        }
-        }
+                await videosInsertRequest.UploadAsync();
+            }
+            }
 
-        void videosInsertRequest_ProgressChanged(Google.Apis.Upload.IUploadProgress progress)
-        {
-        switch (progress.Status)
-        {
-            case UploadStatus.Uploading:
-            Console.WriteLine("{0} bytes sent.", progress.BytesSent);
-            break;
+            void videosInsertRequest_ProgressChanged(Google.Apis.Upload.IUploadProgress progress)
+            {
+            switch (progress.Status)
+            {
+                case UploadStatus.Uploading:
+                Console.WriteLine("{0} bytes sent.", progress.BytesSent);
+                break;
 
-            case UploadStatus.Failed:
-            Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
-            Program.upload_to_youtube = "no";
-            break;
-        }
+                case UploadStatus.Failed:
+                Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
+                failed_videos = $"{failed_videos}\n{video_title}";
+                Program.upload_to_youtube = "no";
+                break;
+            }
         }
 
         void videosInsertRequest_ResponseReceived(Video video)
@@ -162,7 +165,7 @@ namespace Airgeadlamh.YoutubeUploader
                 {
                 var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet");
                 playlistItemsListRequest.PlaylistId = uploadsListId;
-                playlistItemsListRequest.MaxResults = 50;
+                playlistItemsListRequest.MaxResults = 999;
                 playlistItemsListRequest.PageToken = nextPageToken;
 
                 // Retrieve the list of videos uploaded to the authenticated user's channel.
@@ -172,11 +175,12 @@ namespace Airgeadlamh.YoutubeUploader
                 {
                     // Print information about each video.
                     //Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
-                    if (playlistItem.Snippet.Title == UploadVideo.video_title)
+                    File.AppendAllText("upload_list.txt", playlistItem.Snippet.Title + Environment.NewLine);
+                    /*if (playlistItem.Snippet.Title == UploadVideo.video_title)
                     {
                         UploadVideo.clip_exists = true;
                         return;
-                    }
+                    }*/
                 }
 
                 nextPageToken = playlistItemsListResponse.NextPageToken;
