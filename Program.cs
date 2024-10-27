@@ -19,7 +19,22 @@ namespace Airgeadlamh.YoutubeUploader
         private static string out_dir = "";
         static void Main(string[] args)
         {
-            
+            if (args.Length > 0 && args[0] == "list")
+            {
+                Console.WriteLine("Checking existing videos");
+                Console.WriteLine("============================");
+                try
+                {
+                    new MyUploads().Run().Wait();
+                }
+                catch (AggregateException ex)
+                {
+                    foreach (var e in ex.InnerExceptions)
+                    {
+                    Console.WriteLine("Error: " + e.Message);
+                    }
+                }
+            }
             #region Selecting stream
             Functions.create_basedir();
             

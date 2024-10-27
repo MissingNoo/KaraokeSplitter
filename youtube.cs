@@ -175,12 +175,19 @@ namespace Airgeadlamh.YoutubeUploader
                 {
                     // Print information about each video.
                     //Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
-                    File.AppendAllText("upload_list.txt", playlistItem.Snippet.Title + Environment.NewLine);
-                    /*if (playlistItem.Snippet.Title == UploadVideo.video_title)
+                    string[] onfile = File.ReadAllText("upload_list.txt").Split("\n");
+                    bool found = false;
+                    foreach (var song in onfile)
                     {
-                        UploadVideo.clip_exists = true;
-                        return;
-                    }*/
+                        if (playlistItem.Snippet.Title == song)
+                        {
+                            found = true;
+                        }
+                    }
+                    if (!found)
+                    {
+                        File.AppendAllText("upload_list.txt", playlistItem.Snippet.Title + Environment.NewLine);
+                    }
                 }
 
                 nextPageToken = playlistItemsListResponse.NextPageToken;
