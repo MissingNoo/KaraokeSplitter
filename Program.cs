@@ -69,7 +69,7 @@ namespace Airgeadlamh.YoutubeUploader
         private static void create_stream(){
             Console.WriteLine("Filename:");
             string fname = Console.ReadLine();
-            string filepath = Path.Join("stream_files", fname);
+            string filepath = Path.Join("streams", fname);
             Console.WriteLine("Stream name:");
             string name = Console.ReadLine();
             File.AppendAllText(filepath, $"stream_name;{name}" + Environment.NewLine);
@@ -151,10 +151,10 @@ namespace Airgeadlamh.YoutubeUploader
                     switch (selected.ToUpper())
                     {
                         case "A":
-                            Console.WriteLine("\nSong name:");
-                            string n = Console.ReadLine().Replace(" ", "");
-                            Console.WriteLine("Start time:");
+                            Console.WriteLine("\nStart time:");
                             string s = Console.ReadLine().Replace(" ", "");
+                            Console.WriteLine("Song name:");
+                            string n = Console.ReadLine().Replace(" ", "");
                             Console.WriteLine("End time:");
                             string e = Console.ReadLine().Replace(" ", "");
                             File.AppendAllText(stream_list[selectednumber], $"{n};{s};{e}" + Environment.NewLine);
