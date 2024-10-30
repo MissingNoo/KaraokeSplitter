@@ -35,35 +35,38 @@ namespace Airgeadlamh.YoutubeUploader
                     }
                 }
             }
-            #region Selecting stream
-            Functions.create_basedir();
-            
-            for (var i = 0; i < stream_list.Count(); i++)
+            while (true)
             {
-                Console.WriteLine($"{i}: {Path.GetFileName(stream_list[i])}");
-            }
-            #endregion
-            Console.WriteLine("A: Create new stream file");
-            
-            Console.WriteLine();
-            Console.Write("Select the stream file: ");
-            #pragma warning disable CS8604 // Possible null reference argument.
-            string selected = Console.ReadLine();
-            int selectednumber;
-            bool isNumber = int.TryParse(selected, out selectednumber);
-            if (isNumber)
-            {
-                process_stream(selectednumber);
-            }
-            else {
-                switch (selected.ToUpper())
+                #region Selecting stream
+                Functions.create_basedir();
+                
+                for (var i = 0; i < stream_list.Count(); i++)
                 {
-                    case "A":
-                        create_stream();
-                        break;
+                    Console.WriteLine($"{i}: {Path.GetFileName(stream_list[i])}");
+                }
+                #endregion
+                Console.WriteLine("A: Create new stream file");
+                
+                Console.WriteLine();
+                Console.Write("Select the stream file: ");
+                #pragma warning disable CS8604 // Possible null reference argument.
+                string selected = Console.ReadLine();
+                int selectednumber;
+                bool isNumber = int.TryParse(selected, out selectednumber);
+                if (isNumber)
+                {
+                    process_stream(selectednumber);
+                }
+                else {
+                    switch (selected.ToUpper())
+                    {
+                        case "A":
+                            create_stream();
+                            stream_list = Directory.GetFiles("streams");
+                            break;
+                    }
                 }
             }
-            
         }
 
         private static void create_stream(){
@@ -88,6 +91,7 @@ namespace Airgeadlamh.YoutubeUploader
 
         private static void process_stream(int selectednumber){
             while (true) {
+                Console.Clear();
                 string[] stream_info = File.ReadAllText(stream_list[selectednumber]).Split("#Stream_Info#")[0].Split("\n");
                 stream_name = stream_info[0].Split(";")[1];
                 stream_link = stream_info[1].Split(";")[1];
@@ -118,7 +122,7 @@ namespace Airgeadlamh.YoutubeUploader
                         Console.WriteLine($"{i}: {song[0]}");
                     }
                 }
-                Console.WriteLine("\nA: Add song\nP: Process all Songs\nR: Reprocess all songs\nU: Upload all songs\nM: Make all MP3\nQ: Quit");
+                Console.WriteLine("\nA: Add song\nP: Process all Songs\nR: Reprocess all songs\nU: Upload all songs\nM: Make all MP3\nD: Add date to title of already uploaded ones\nQ: Quit");
                 string selected = Console.ReadLine();
                 int snumber;
                 bool isNumber = int.TryParse(selected, out snumber);
@@ -154,7 +158,7 @@ namespace Airgeadlamh.YoutubeUploader
                             Console.WriteLine("\nStart time:");
                             string s = Console.ReadLine().Replace(" ", "");
                             Console.WriteLine("Song name:");
-                            string n = Console.ReadLine().Replace(" ", "");
+                            string n = Console.ReadLine();
                             Console.WriteLine("End time:");
                             string e = Console.ReadLine().Replace(" ", "");
                             File.AppendAllText(stream_list[selectednumber], $"{n};{s};{e}" + Environment.NewLine);
@@ -170,6 +174,25 @@ namespace Airgeadlamh.YoutubeUploader
                             break;
                         case "M":
                             process_all(song_data, false, true);
+                            break;
+                        case "D":
+                            Console.WriteLine("Insert date: ");
+                            string day = Console.ReadLine();
+                            string[] uploaded_list = File.ReadAllText("upload_list.txt").Split("\n");
+                            foreach (var song in song_data)
+                            {
+                                string title = song.Split(";")[0];
+                                foreach (var upload in uploaded_list)
+                                {
+                                    if (upload == $"[{streamer_name}] {title}")
+                                    {
+                                        Console.WriteLine($"{title} - ({day})");
+                                        break;
+                                    }
+                                }
+                            }
+                            Console.WriteLine("Press any key to continue");
+                            Console.Read();
                             break;
                         case "Q":
                             Environment.Exit(0);
