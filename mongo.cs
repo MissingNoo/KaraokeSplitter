@@ -16,12 +16,23 @@ namespace Airgeadlamh.YoutubeUploader
         {
             var stream = Program.stream;
             var collection = db.GetCollection<SongEntry>(stream.Name);
-            collection.InsertOne(song);
-            /*var filter = Builders<SongEntry>.Filter.Eq("_id", songEntry.Id);
-            var updateResult = collection.UpdateOne(filter, new UpdateDefinition<MongoDBSongEntry>
+            var filter = Builders<SongEntry>.Filter.Eq(s => s.Name, song.Name);
+            var updatePipeline = Builders<SongEntry>.Update.Pipeline(
+                PipelineDefinition<SongEntry, SongEntry>.Create(
+                    new BsonDocument("$set", new BsonDocument("Start", song.Start)),
+                    new BsonDocument("$set", new BsonDocument("End", song.End))
+                )
+            );
+            var updateResult = collection.UpdateOne(filter, updatePipeline);
+            var found = collection.Find(filter).Any();
+            if (!found) {
+                collection.InsertOne(song);
+            } 
+            else
             {
-                $set = songEntry.ToBsonDocument()
-            });*/
+                
+            }
+            
         }
     }
 }

@@ -155,7 +155,7 @@ namespace Airgeadlamh.YoutubeUploader
                 int i = 0;
                 foreach (var song in stream.Songs)
                 {
-                    Console.WriteLine($"{++i}: {song.Name}");
+                    Console.WriteLine($"{++i}: {song.Name} - ({song.Start} - {song.End})");
                 }
                 Console.WriteLine("\nA: Add song\nP: Process all Songs\nR: Reprocess all songs\nU: Upload all songs\nM: Make all MP3\nD: Add date to title of already uploaded ones\nQ: Quit");
                 string selected = Console.ReadLine() ?? "";
@@ -165,11 +165,30 @@ namespace Airgeadlamh.YoutubeUploader
                 if (isNumber)
                 {
                     var song = stream.Songs[snumber - 1];
-                    Console.WriteLine($"\nSelected Song: \"{song.Name}\"\nU: Upload\nR: Reprocess\nM: Make MP3\nP: Play Song (mp4)\nP3: Play Song (mp3)\nQ: Quit");
+                    Console.WriteLine($"\nSelected Song: \"{song.Name}\"\nU: Update moments\nD: Delete\nUP: Upload\nR: Reprocess\nM: Make MP3\nP: Play Song (mp4)\nQ: Quit");
                     string subselected = Console.ReadLine() ?? "";
+                    var collection = db.GetCollection<SongEntry>(stream.Name);
+                    var song_filter = Builders<SongEntry>.Filter.Eq("Name", song.Name);
                     switch (subselected.ToUpper())
                     {
                         case "U":
+                            Console.WriteLine($"\nStart time {song.Start}:");
+                            string s = Console.ReadLine() ?? "".Replace(" ", "");
+                            if (s != "")
+                            {
+                                var updateResult = collection.UpdateOne(song_filter, Builders<SongEntry>.Update.Set("Start", s));
+                            }
+                            Console.WriteLine($"\nEnd time {song.End}:");
+                            s = Console.ReadLine() ?? "".Replace(" ", "");
+                            if (s != "")
+                            {
+                                var updateResult = collection.UpdateOne(song_filter, Builders<SongEntry>.Update.Set("End", s));
+                            }                            
+                            break;
+                        case "D":
+                            collection.DeleteOne(song_filter);
+                            break;
+                        case "UP":
                             process_song(song, false, false, 0, true);
                             break;
                         case "R":
@@ -179,10 +198,10 @@ namespace Airgeadlamh.YoutubeUploader
                             process_song(song, true, true, snumber, false);
                             break;
                         case "P":
-                            Functions.shell_run($"mpv {Path.Join("output", stream.Name, "mp4") + song.Name + ".mp4"}", verbose);
+                            Functions.shell_run($"mpv {Path.Join("output", stream.Name, "mp4", song.Name).Replace(" ", "\\ ") + ".mp4"}", verbose);
                             break;
                         case "P3":
-                            Functions.shell_run($"mpv {Path.Join("output", "mp3", stream.Streamer) + song.Name + ".mp3"}", verbose);
+                            Functions.shell_run($"mpv {Path.Join("output", "mp3", stream.Streamer, song.Name).Replace(" ", "\\ ") + ".mp3"}", verbose);
                             break;
                     }
                     
@@ -204,7 +223,6 @@ namespace Airgeadlamh.YoutubeUploader
                                 Name = n
                             };
                             col.InsertOne(song);
-                            //File.AppendAllText(stream_list[selectednumber], $"{n};{s};{e}" + Environment.NewLine);
                             break;
                         case "P":
                             process_all();
