@@ -25,7 +25,6 @@ namespace Airgeadlamh.YoutubeUploader
         public static string mp3_image = "";
         public static string make_mp3 = "";
         public static string upload_to_youtube = "";
-        public static string stream_file = "";
         public static string mp4_path = "";
         public static string mp3_path = "";
         public static bool verbose = false;
@@ -136,7 +135,7 @@ namespace Airgeadlamh.YoutubeUploader
                 Console.Clear();
                 var db = Mongo.db;
                 var streams = db.GetCollection<Stream>("Streams");
-                var filter = Builders<Stream>.Filter.Eq(s => s.Name, "teste");
+                var filter = Builders<Stream>.Filter.Eq(s => s.Name, stream_list[selectednumber].Name);
                 stream = (Stream)streams.Find(filter).FirstOrDefault();
                 var songs_col = db.GetCollection<SongEntry>(stream.Name);
                 stream.Songs = songs_col.Find(Builders<SongEntry>.Filter.Empty).ToList();
@@ -152,7 +151,7 @@ namespace Airgeadlamh.YoutubeUploader
                 Directory.CreateDirectory(out_dir);
                 Directory.CreateDirectory(Path.Join(out_dir, "mp4"));
 
-                Console.WriteLine($"\n====================================\nStream name: {stream.Name} \nStream Link: {stream.Link} \nStreamer: {stream.Streamer} \nStream file: {Path.GetFileName(stream_file)} \n====================================\n");
+                Console.WriteLine($"\n====================================\nStream name: {stream.Name} \nStream Link: {stream.Link} \nStreamer: {stream.Streamer} \nStream file: {Path.GetFileName(stream.File)} \n====================================\n");
                 int i = 0;
                 foreach (var song in stream.Songs)
                 {
@@ -255,7 +254,7 @@ namespace Airgeadlamh.YoutubeUploader
             if (!File.Exists(mp4_path) || force)
             {
                 Console.WriteLine($"Cutting \"{song.Name}\" from stream, {song.Start} to {song.End}... ");
-                Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song.Start}\" -to \"{song.End}\" -i \'{stream_file}\' -c copy \'{mp4_path}\'", verbose);
+                Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song.Start}\" -to \"{song.End}\" -i stream_files/\'{stream.File}\' -c copy \'{mp4_path}\'", verbose);
             }
             else
             {
@@ -288,11 +287,7 @@ namespace Airgeadlamh.YoutubeUploader
         
         private static void process_all(bool force = false, bool mp3 = false, bool uploadsong = false) {
             int cur_song = 1;
-            if (!File.Exists(stream_file))
-            {
-                Console.WriteLine("Stream file not found, exiting.");
-                return;
-            }
+            
             foreach (var song in stream.Songs)
             {
                 process_song(song, force, mp3, cur_song, uploadsong);
