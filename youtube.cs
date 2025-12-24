@@ -81,8 +81,8 @@ namespace Airgeadlamh.YoutubeUploader
             var video = new Video();
             video.Snippet = new VideoSnippet();
             video.Snippet.Title = video_title;
-            video.Snippet.Description = $"Source: {Program.stream_link} \nYoutube: {Program.streamer_name}";
-            video.Snippet.Tags = new string[] { Program.streamer_name, "karaoke" };
+            video.Snippet.Description = $"Source: {Program.stream.Link} \nYoutube: {Program.stream.Streamer}";
+            video.Snippet.Tags = new string[] { Program.stream.Streamer, "karaoke" };
             video.Snippet.CategoryId = "10"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
             video.Status = new VideoStatus();
             video.Status.PrivacyStatus = "unlisted"; // or "private" or "public"
