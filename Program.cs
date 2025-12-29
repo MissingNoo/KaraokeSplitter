@@ -77,7 +77,7 @@ namespace Airgeadlamh.YoutubeUploader
                 int _i = 0;
                 foreach (var item in stream_list)
                 {
-                    Console.WriteLine($"{++_i}: {item.Name}");
+                    Console.WriteLine($"{++_i}: {item.Name} - {item.Streamer}");
                 }
                 #endregion
                 Console.WriteLine("A: Create new stream file");
@@ -328,6 +328,10 @@ namespace Airgeadlamh.YoutubeUploader
             }
             if (mp3)
             {
+                if (song.Type == "Noise")
+                {
+                    cur_song -= 1;
+                }
                 if (!File.Exists(mp3_path) || force)
                 {
                     Directory.CreateDirectory(Path.Join("output", "mp3", stream.Streamer, song.Type));
@@ -338,6 +342,13 @@ namespace Airgeadlamh.YoutubeUploader
                     tfile.Tag.Album = stream.Name;
                     tfile.Tag.Performers = [stream.Streamer];
                     tfile.Tag.Track = (uint)cur_song;
+
+                    TagLib.Picture pic; 
+                    pic = new TagLib.Picture("cover.png");
+                    
+                    pic.Type = TagLib.PictureType.FrontCover;
+                    pic.Description = "Cover";
+                    tfile.Tag.Pictures = new TagLib.IPicture[] { pic };
                     tfile.Save();
                 }
                 else
