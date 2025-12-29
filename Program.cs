@@ -50,6 +50,7 @@ namespace Airgeadlamh.YoutubeUploader
         public static bool os_linux = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         static List<Stream>? stream_list;
         private static string out_dir = "";
+        private static int album_num = 0;
         static void Main(string[] args)
         {
             //Mongo.add_upload();
@@ -328,9 +329,10 @@ namespace Airgeadlamh.YoutubeUploader
             }
             if (mp3)
             {
+                album_num++;
                 if (song.Type == "Noise")
                 {
-                    cur_song -= 1;
+                    album_num -= 1;
                 }
                 if (!File.Exists(mp3_path) || force)
                 {
@@ -341,7 +343,7 @@ namespace Airgeadlamh.YoutubeUploader
                     tfile.Tag.Title = song.Name;
                     tfile.Tag.Album = stream.Name;
                     tfile.Tag.Performers = [stream.Streamer];
-                    tfile.Tag.Track = (uint)cur_song;
+                    tfile.Tag.Track = (uint)album_num;
 
                     TagLib.Picture pic; 
                     pic = new TagLib.Picture("cover.png");
@@ -364,7 +366,7 @@ namespace Airgeadlamh.YoutubeUploader
         
         private static void process_all(bool force = false, bool mp3 = false, bool uploadsong = false) {
             int cur_song = 1;
-            
+            album_num = 0;
             foreach (var song in stream.Songs)
             {
                 process_song(song, force, mp3, cur_song, uploadsong);
