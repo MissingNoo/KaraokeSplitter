@@ -12,6 +12,7 @@ namespace Airgeadlamh.YoutubeUploader
         required public string Link {get;set;}
         required public string File {get;set;}
         required public List<SongEntry> Songs {get;set;}
+        required public Boolean Member {get;set;}
     }
 
     public class SongEntry
@@ -20,6 +21,7 @@ namespace Airgeadlamh.YoutubeUploader
         required public string Name {get;set;}
         required public string Start {get;set;}
         required public string End {get;set;}
+        public string? Type {get;set;}
     }
     internal class Program {
         public static string mp3_image = "";
@@ -34,7 +36,8 @@ namespace Airgeadlamh.YoutubeUploader
             Link = "",
             Name = "",
             Songs = [],
-            Streamer = ""
+            Streamer = "",
+            Member = false
         };
         /*public static Stream stream = new Stream
         {
@@ -102,30 +105,25 @@ namespace Airgeadlamh.YoutubeUploader
         }
 
         private static void create_stream(){
-            Console.WriteLine("Filename:");
-            string fname = Console.ReadLine() ?? "";
-            string filepath = Path.Join("streams", fname);
             Console.WriteLine("Stream name:");
             string name = Console.ReadLine() ?? "";
-            File.AppendAllText(filepath, $"stream.Name;{name}" + Environment.NewLine);
             Console.WriteLine("Stream link:");
             string link = Console.ReadLine() ?? "";
-            File.AppendAllText(filepath, $"stream.Link;{link}" + Environment.NewLine);
             Console.WriteLine("Streamer name:");
             string streamername = Console.ReadLine() ?? "";
-            File.AppendAllText(filepath, $"stream.Streamer;{streamername}" + Environment.NewLine);
             Console.WriteLine("Stream filename:");
             string filename = Console.ReadLine() ?? "";
-            File.AppendAllText(filepath, $"stream_file;{filename}" + Environment.NewLine);
-            File.AppendAllText(filepath, "#Stream_Info#" + Environment.NewLine);
-            Console.WriteLine("Stream file created!");
+            Console.WriteLine("Member only(s/n):");
+            string mb = Console.ReadLine() ?? "";
+            Boolean m = mb.ToUpper() == "S" ? true : false;
             Stream stream = new Stream
             {
                 File = filename,
                 Name = name,
                 Streamer = streamername,
                 Link = link,
-                Songs = new List<SongEntry>()
+                Songs = new List<SongEntry>(),
+                Member = m
             };
             Mongo.add_stream(stream);
         }
@@ -135,8 +133,10 @@ namespace Airgeadlamh.YoutubeUploader
                 Console.Clear();
                 var db = Mongo.db;
                 var streams = db.GetCollection<Stream>("Streams");
+                #pragma warning disable CS8602 //This is never null because the options come from the list
                 var filter = Builders<Stream>.Filter.Eq(s => s.Name, stream_list[selectednumber].Name);
-                stream = (Stream)streams.Find(filter).FirstOrDefault();
+                #pragma warning restore CS8602 // Dereference of a possibly null reference.
+                stream = streams.Find(filter).FirstOrDefault();
                 var songs_col = db.GetCollection<SongEntry>(stream.Name);
                 stream.Songs = songs_col.Find(Builders<SongEntry>.Filter.Empty).ToList();
                 //if (upload_to_youtube == "yes" && !File.Exists("client_secrets.json"))
@@ -151,13 +151,13 @@ namespace Airgeadlamh.YoutubeUploader
                 Directory.CreateDirectory(out_dir);
                 Directory.CreateDirectory(Path.Join(out_dir, "mp4"));
 
-                Console.WriteLine($"\n====================================\nStream name: {stream.Name} \nStream Link: {stream.Link} \nStreamer: {stream.Streamer} \nStream file: {Path.GetFileName(stream.File)} \n====================================\n");
+                Console.WriteLine($"\n====================================\nStream name: {stream.Name} \nStream Link: {stream.Link} \nStreamer: {stream.Streamer} \nStream file: {Path.GetFileName(stream.File)}\nMember only: {stream.Member} \n====================================\n");
                 int i = 0;
                 foreach (var song in stream.Songs)
                 {
                     Console.WriteLine($"{++i}: {song.Name} - ({song.Start} - {song.End})");
                 }
-                Console.WriteLine("\nA: Add song\nP: Process all Songs\nR: Reprocess all songs\nU: Upload all songs\nM: Make all MP3\nD: Add date to title of already uploaded ones\nQ: Quit");
+                Console.WriteLine("\nA: Add song\nP: Process all Songs\nR: Reprocess all songs\nU: Upload all songs\nM: Make all MP3\nD: Add date to title of already uploaded ones\nML: Make list for youtube\nQ: Quit");
                 string selected = Console.ReadLine() ?? "";
                 int snumber;
                 bool isNumber = int.TryParse(selected, out snumber);
@@ -198,7 +198,7 @@ namespace Airgeadlamh.YoutubeUploader
                             process_song(song, true, true, snumber, false);
                             break;
                         case "P":
-                            Functions.shell_run($"mpv {Path.Join("output", stream.Name, "mp4", song.Name).Replace(" ", "\\ ") + ".mp4"}", verbose);
+                            Functions.shell_run($"mpv {Path.Join("output", stream.Name, "mp4", song.Type, song.Name).Replace(" ", "\\ ") + ".mp4"}", verbose);
                             break;
                         case "P3":
                             Functions.shell_run($"mpv {Path.Join("output", "mp3", stream.Streamer, song.Name).Replace(" ", "\\ ") + ".mp3"}", verbose);
@@ -214,13 +214,29 @@ namespace Airgeadlamh.YoutubeUploader
                             string s = Console.ReadLine() ?? "".Replace(" ", "");
                             Console.WriteLine("End time:");
                             string e = Console.ReadLine() ?? "".Replace(" ", "");
-                            Console.WriteLine("Song name:");
+                            Console.WriteLine("Name:");
                             string n = Console.ReadLine() ?? "";
+                            Console.WriteLine("Type(s:Song/n:Noise):");
+                            string t = Console.ReadLine() ?? "";
+                            switch (t.ToUpper())
+                            {
+                                default:
+                                    t = "Song";
+                                    break;
+                                case "S":
+                                    t = "Song";
+                                    break;
+                                case "N":
+                                    t = "Noise";
+                                    break;
+                            }
+                            
                             var col = db.GetCollection<SongEntry>(stream.Name);
                             SongEntry song = new SongEntry {
                                 Start = s,
                                 End = e,
-                                Name = n
+                                Name = n,
+                                Type  = t
                             };
                             col.InsertOne(song);
                             break;
@@ -255,6 +271,26 @@ namespace Airgeadlamh.YoutubeUploader
                             Console.WriteLine("Press any key to continue");
                             Console.Read();
                             break;
+                        case "ML":
+                            i = 0;
+                            Console.WriteLine("Songs in this video:");
+                            foreach (var _song in stream.Songs)
+                            {
+                                if (_song.Type == "Song")
+                                {
+                                    Console.WriteLine($"{++i}: {_song.Name} - {_song.Start}");
+                                }
+                            }
+                            Console.WriteLine("\nOthers:");
+                            foreach (var _song in stream.Songs)
+                            {
+                                if (_song.Type == "Noise")
+                                {
+                                    Console.WriteLine($"{_song.Name} - {_song.Start}");
+                                }
+                            }
+                            Console.ReadLine();
+                            break;
                         case "Q":
                             Environment.Exit(0);
                             break;
@@ -266,13 +302,25 @@ namespace Airgeadlamh.YoutubeUploader
         }
 
         private static void process_song(SongEntry song, bool force = false, bool mp3 = false, int cur_song = 0, bool upload = false) {
-            mp4_path = Path.Join(out_dir, "mp4", song.Name) + ".mp4";
-            mp3_path = Path.Join("output", "mp3", stream.Streamer, song.Name) + ".mp3";
+            if (song.Type == null)
+            {
+                song.Type = "Music";
+            }
+            mp4_path = Path.Join(out_dir, "mp4", song.Type, song.Name) + ".mp4";
+            Directory.CreateDirectory(Path.Join(out_dir, "mp4", song.Type));
+            mp3_path = Path.Join("output", "mp3", stream.Streamer, song.Type, song.Name) + ".mp3";
             Console.WriteLine();
             if (!File.Exists(mp4_path) || force)
             {
                 Console.WriteLine($"Cutting \"{song.Name}\" from stream, {song.Start} to {song.End}... ");
-                Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song.Start}\" -to \"{song.End}\" -i stream_files/\'{stream.File}\' -c copy \'{mp4_path}\'", verbose);
+                if (song.Type == "Song")
+                {
+                    Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song.Start}\" -to \"{song.End}\" -i stream_files/\'{stream.File}\' -c copy \'{mp4_path}\'", verbose);
+                } else if (song.Type == "Noise")
+                {
+                    Functions.shell_run($"/usr/bin/ffmpeg -y -ss \"{song.Start}\" -to \"{song.End}\" -i stream_files/\'{stream.File}\' \'{mp4_path}\'", verbose);
+                }
+                
             }
             else
             {
@@ -282,7 +330,7 @@ namespace Airgeadlamh.YoutubeUploader
             {
                 if (!File.Exists(mp3_path) || force)
                 {
-                    Directory.CreateDirectory(Path.Join("output", "mp3", stream.Streamer));
+                    Directory.CreateDirectory(Path.Join("output", "mp3", stream.Streamer, song.Type));
                     Console.WriteLine($"Converting \"{song.Name}\" to mp3... ");
                     Functions.shell_run($"/usr/bin/ffmpeg -y -i \'{mp4_path}\' \'{mp3_path}\'", verbose);
                     var tfile = TagLib.File.Create(mp3_path);
@@ -314,28 +362,34 @@ namespace Airgeadlamh.YoutubeUploader
         }
 
         private static void song_upload(SongEntry song) {
-            string title = $"[{stream.Streamer}] {song.Name}";
-            bool already_uploaded = false;
-            if (File.Exists("upload_list.txt"))
+            if (stream.Member)
             {
-                string[] uploaded_list = File.ReadAllText("upload_list.txt").Split("\n");
-                foreach (var upload in uploaded_list)
+                Console.WriteLine("Can't upload content from member only streams!");
+                Console.ReadLine();
+            } else {
+                string title = $"[{stream.Streamer}] {song.Name}";
+                bool already_uploaded = false;
+                if (File.Exists("upload_list.txt"))
                 {
-                    if (upload == title)
+                    string[] uploaded_list = File.ReadAllText("upload_list.txt").Split("\n");
+                    foreach (var upload in uploaded_list)
                     {
-                        already_uploaded = true;
+                        if (upload == title)
+                        {
+                            already_uploaded = true;
+                        }
                     }
                 }
-            }
-            
-            if (!already_uploaded)
-            {
-                UploadVideo.video_title = title;
-                UploadVideo.upload();
-            }
-            else
-            {
-                Console.WriteLine($"\"[{stream.Streamer}] {song.Name}\" Already uploaded to Youtube!\n");
+                
+                if (!already_uploaded)
+                {
+                    UploadVideo.video_title = title;
+                    UploadVideo.upload();
+                }
+                else
+                {
+                    Console.WriteLine($"\"[{stream.Streamer}] {song.Name}\" Already uploaded to Youtube!\n");
+                }
             }
         }
     }
