@@ -11,6 +11,7 @@ namespace Airgeadlamh.YoutubeUploader
         required public string Streamer {get;set;}
         required public string Link {get;set;}
         required public string File {get;set;}
+        required public string Background {get;set;}
         required public List<SongEntry> Songs {get;set;}
         required public Boolean Member {get;set;}
     }
@@ -19,6 +20,7 @@ namespace Airgeadlamh.YoutubeUploader
     {
         public ObjectId _id = ObjectId.GenerateNewId();
         required public string Name {get;set;}
+        required public string Artist {get;set;}
         required public string Start {get;set;}
         required public string End {get;set;}
         public string? Type {get;set;}
@@ -37,7 +39,8 @@ namespace Airgeadlamh.YoutubeUploader
             Name = "",
             Songs = [],
             Streamer = "",
-            Member = false
+            Member = false,
+            Background = ""
         };
         /*public static Stream stream = new Stream
         {
@@ -51,6 +54,7 @@ namespace Airgeadlamh.YoutubeUploader
         static List<Stream>? stream_list;
         private static string out_dir = "";
         private static int album_num = 0;
+        public static SongEntry? current_upload;
         static void Main(string[] args)
         {
             //Mongo.add_upload();
@@ -114,6 +118,8 @@ namespace Airgeadlamh.YoutubeUploader
             string streamername = Console.ReadLine() ?? "";
             Console.WriteLine("Stream filename:");
             string filename = Console.ReadLine() ?? "";
+            Console.WriteLine("Thumbnail Background (R,G,B):");
+            string bg = Console.ReadLine() ?? "";
             Console.WriteLine("Member only(s/n):");
             string mb = Console.ReadLine() ?? "";
             Boolean m = mb.ToUpper() == "S" ? true : false;
@@ -124,7 +130,8 @@ namespace Airgeadlamh.YoutubeUploader
                 Streamer = streamername,
                 Link = link,
                 Songs = new List<SongEntry>(),
-                Member = m
+                Member = m,
+                Background = bg
             };
             Mongo.add_stream(stream);
         }
@@ -217,6 +224,8 @@ namespace Airgeadlamh.YoutubeUploader
                             string e = Console.ReadLine() ?? "".Replace(" ", "");
                             Console.WriteLine("Name:");
                             string n = Console.ReadLine() ?? "";
+                            Console.WriteLine("Name:");
+                            string ar = Console.ReadLine() ?? "";
                             Console.WriteLine("Type(s:Song/n:Noise):");
                             string t = Console.ReadLine() ?? "";
                             switch (t.ToUpper())
@@ -237,7 +246,8 @@ namespace Airgeadlamh.YoutubeUploader
                                 Start = s,
                                 End = e,
                                 Name = n,
-                                Type  = t
+                                Type  = t,
+                                Artist = ar
                             };
                             col.InsertOne(song);
                             break;
@@ -360,6 +370,7 @@ namespace Airgeadlamh.YoutubeUploader
             }
             if (upload)
             {
+                current_upload = song;
                 song_upload(song);
             }
         }
@@ -380,14 +391,45 @@ namespace Airgeadlamh.YoutubeUploader
                 Console.WriteLine("Can't upload content from member only streams!");
                 Console.ReadLine();
             } else {
-                string title = $"[{stream.Streamer}] {song.Name}";
+                #region Thumbnail
+                if (!Directory.Exists("Thumbnails"))
+                {
+                    Directory.CreateDirectory("Thumbnails");
+                } else
+                {
+                    //Console.WriteLine($"Frames: {Functions.get_video_frames(Program.mp4_path)}");
+                    Random rnd = new Random();
+                    int frame = rnd.Next(1, Functions.get_video_frames(Program.mp4_path));
+                    //Export the frame
+                    string a = @"""select=eq(n\," + frame + @"})""";
+                    Functions.shell_run($"ffmpeg -y -i '{Program.mp4_path}' -vf {a} -vframes 1 Thumbnails/prethumb.png".Replace("select", '"' + "select").Replace("})", ")" + '"'));
+                    Console.WriteLine("Grabbed frame");
+                    Functions.shell_run($"docker run --rm -v /home/airgeadlamh/KaraokeSplitter/Thumbnails:/w withoutbg/app:latest withoutbg /w/prethumb.png --output-dir /w/");
+                    Console.WriteLine("Removed BG");
+                    //move to the side
+                    Functions.shell_run("magick Thumbnails/prethumb-withoutbg.png -background transparent -extent 1920x1080+500+0 /tmp/moved.png");
+                    Functions.shell_run("magick -background transparent -fill white -font /usr/share/fonts/TTF/ConcertOne-Regular.ttf -size 800x324  label:'" + song.Name + "' /tmp/text.png");
+                    //get bg color
+                    //Functions.shell_run("magick prethumb-withoutbg.png +dither -remap netscape: /tmp/step3.png");
+                    //Functions.shell_run("magick /tmp/step3.png -format %c -depth 8 histogram:info:/tmp/histo.txt");
+                    //string color = Functions.shell_run("sort -n /tmp/histo.txt | tail -6 | cut -f2 -d '(' | cut -f1 -d ')' | head -6 | sed '1p;d'");
+                    //string color = colors[0] + "," + colors[1] + "," + colors[2];
+                    //Console.WriteLine("Got BG color");
+                    //generate background
+                    Functions.shell_run($"gen_bg {stream.Background}");
+                    Console.WriteLine("Thumb done");
+                    File.Copy("/tmp/thumb.png", $"Thumbnails/{song.Name}.png", true);
+                }
+                #endregion
+                string old_title = $"[{stream.Streamer}] {song.Name}";
+                string title = $"{stream.Streamer} sings \"{song.Name}\" by {song.Artist}";
                 bool already_uploaded = false;
                 if (File.Exists("upload_list.txt"))
                 {
                     string[] uploaded_list = File.ReadAllText("upload_list.txt").Split("\n");
                     foreach (var upload in uploaded_list)
                     {
-                        if (upload == title)
+                        if (upload == title || upload == old_title)
                         {
                             already_uploaded = true;
                         }

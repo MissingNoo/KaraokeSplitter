@@ -10,6 +10,7 @@ using Google.Apis.Upload;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using ZstdSharp.Unsafe;
 
 namespace Airgeadlamh.YoutubeUploader
 {
@@ -25,23 +26,33 @@ namespace Airgeadlamh.YoutubeUploader
         public static void upload(){
             //Console.WriteLine("Checking if clip exists");
             //Console.WriteLine("============================");
-            //try
+            //IEnumerable<String> songs = File.ReadLines("upload_list.txt");
+            //#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            //string search = "[" + Program.stream.Streamer + "]" + " " + Program.current_upload.Name;
+            //#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            //if (songs.Contains(search))
             //{
-            //    new MyUploads().Run().Wait();
-            //}
-            //catch (AggregateException ex)
-            //{
-            //    foreach (var e in ex.InnerExceptions)
-            //    {
-            //    Console.WriteLine("Error: " + e.Message);
-            //    }
-            //}
-//
-            //if (clip_exists)
-            //{
-            //    Console.WriteLine("Clip already uploaded to channel, exiting");
+            //    Console.WriteLine("Song already uploaded!");
+            //    Console.ReadKey();
             //    return;
             //}
+                              //try
+                              //{
+                              //    new MyUploads().Run().Wait();
+                              //}
+                              //catch (AggregateException ex)
+                              //{
+                              //    foreach (var e in ex.InnerExceptions)
+                              //    {
+                              //    Console.WriteLine("Error: " + e.Message);
+                              //    }
+                              //}
+                              //
+                              //if (clip_exists)
+                              //{
+                              //    Console.WriteLine("Clip already uploaded to channel, exiting");
+                              //    return;
+                              //}
             Console.WriteLine($"Uploading {video_title} to youtube");
             Console.WriteLine("==============================");
             try
@@ -82,7 +93,9 @@ namespace Airgeadlamh.YoutubeUploader
             video.Snippet = new VideoSnippet();
             video.Snippet.Title = video_title;
             video.Snippet.Description = $"Source: {Program.stream.Link} \nYoutube: {Program.stream.Streamer}";
-            video.Snippet.Tags = new string[] { Program.stream.Streamer, "karaoke" };
+            #pragma warning disable CS8602 // Dereference of a possibly null reference.
+            video.Snippet.Tags = new string[] { Program.stream.Streamer, "karaoke", "vtuber", Program.current_upload.Artist, Program.current_upload.Name };
+            #pragma warning restore CS8602 // Dereference of a possibly null reference.
             video.Snippet.CategoryId = "10"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
             video.Status = new VideoStatus();
             video.Status.PrivacyStatus = "public"; // or "private" or "public"
